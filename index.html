@@ -35,7 +35,7 @@
     --f-body: "Manrope", system-ui, sans-serif;
     --f-mono: "DM Mono", ui-monospace, monospace;
 
-    --player-h: 148px;
+    --player-h: 172px;
     --ease: cubic-bezier(.22, .8, .2, 1);
   }
 
@@ -260,7 +260,7 @@
   .tracklist { list-style: none; margin-top: 22px; border-top: 1px solid var(--line); }
   .tracklist li { border-bottom: 1px solid var(--line); }
   .tracklist a {
-    display: grid; grid-template-columns: 42px 1fr auto; align-items: center; gap: 14px;
+    display: grid; grid-template-columns: 42px 1fr; align-items: center; gap: 14px;
     padding: 14px 4px; text-decoration: none;
   }
   .tracklist .play {
@@ -271,7 +271,16 @@
   .tracklist a:hover .play, .tracklist a:active .play { background: var(--rose); color: var(--wine); }
   .tracklist .song { font-family: var(--f-display); font-style: italic; font-size: 1.2rem; display: block; line-height: 1.2; }
   .tracklist .why { font-size: .88rem; color: var(--muted); display: block; line-height: 1.4; margin-top: 2px; }
-  .tracklist .ext { font-family: var(--f-mono); font-size: .62rem; letter-spacing: .14em; color: var(--gold); }
+  .tracklist a.active .play { background: var(--rose); color: var(--wine); }
+  .tracklist a.active .song { color: var(--rose); }
+  .screen {
+    margin-top: 16px; aspect-ratio: 16 / 9; border-radius: 16px; overflow: hidden;
+    background: #000; border: 1px solid var(--line); box-shadow: 0 18px 40px rgba(0,0,0,.45);
+    animation: unfold .7s var(--ease) both;
+    scroll-margin-bottom: calc(var(--player-h) + 40px);
+  }
+  .screen[hidden] { display: none; }
+  .screen iframe { display: block; width: 100%; height: 100%; }
   .artist { font-family: var(--f-mono); font-size: .66rem; letter-spacing: .22em; text-transform: uppercase; color: var(--gold); margin-top: 22px; }
 
   @keyframes in { to { opacity: 1; transform: none; } }
@@ -394,9 +403,7 @@
   .no-music .mini-btn .state { display: none; }
   .now-text { min-width: 0; flex: 1; }
   .now-song { display: block; font-size: .72rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .yt-mini { width: 72px; height: 40px; flex: none; border-radius: 8px; overflow: hidden; background: #000; border: 1px solid var(--line); }
-  .yt-mini iframe { display: block; width: 100%; height: 100%; pointer-events: none; }
-  .no-music .yt-mini, .no-music .now-song { display: none; }
+  .no-music .now-song { display: none; }
   .now-num { font-family: var(--f-mono); font-size: .64rem; letter-spacing: .2em; text-transform: uppercase; color: var(--gold); display: block; }
   .now-title { font-family: var(--f-display); font-style: italic; font-size: 1.08rem; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .progress { display: flex; gap: 5px; margin: 12px 2px; }
@@ -550,30 +557,28 @@
         <p>Un jour, tu m'as dit que tu aimais <em>Tayc</em>.</p>
         <p>Depuis, chacune de ses chansons a ton visage.</p>
       </div>
-      <p class="artist">Écouté en pensant à toi</p>
+      <p class="artist">Touche une chanson pour l'écouter</p>
       <ul class="tracklist">
         <li>
-          <a href="https://www.youtube.com/watch?v=mUTsvbridvM" target="_blank" rel="noopener">
+          <a href="https://www.youtube.com/watch?v=mUTsvbridvM" data-id="mUTsvbridvM" target="_blank" rel="noopener">
             <span class="play" aria-hidden="true">▶</span>
             <span><span class="song">Le temps</span><span class="why">Avec toi, je voudrais l'arrêter.</span></span>
-            <span class="ext" aria-hidden="true">↗</span>
           </a>
         </li>
         <li>
-          <a href="https://www.youtube.com/watch?v=-kG7RlDD7tg" target="_blank" rel="noopener">
+          <a href="https://www.youtube.com/watch?v=-kG7RlDD7tg" data-id="-kG7RlDD7tg" target="_blank" rel="noopener">
             <span class="play" aria-hidden="true">▶</span>
             <span><span class="song">N'y pense plus</span><span class="why">Impossible. Je pense à toi.</span></span>
-            <span class="ext" aria-hidden="true">↗</span>
           </a>
         </li>
         <li>
-          <a href="https://www.youtube.com/watch?v=NrdhxCM3aAY" target="_blank" rel="noopener">
+          <a href="https://www.youtube.com/watch?v=NrdhxCM3aAY" data-id="NrdhxCM3aAY" target="_blank" rel="noopener">
             <span class="play" aria-hidden="true">▶</span>
             <span><span class="song">Dodo</span><span class="why">Ma dernière pensée du soir, c'est toi.</span></span>
-            <span class="ext" aria-hidden="true">↗</span>
           </a>
         </li>
       </ul>
+      <div class="screen" id="screen" hidden><div id="yt"></div></div>
     </div>
   </section>
 
@@ -686,7 +691,6 @@
       <span class="now-title" id="now-title">Intro — Toi</span>
       <span class="now-song" id="now-song">♪ Tayc</span>
     </div>
-    <div class="yt-mini" aria-hidden="true"><div id="yt"></div></div>
   </div>
   <div class="progress" id="progress" aria-hidden="true"></div>
   <div class="controls">
@@ -766,60 +770,67 @@
     if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.4) go(current + (dx < 0 ? 1 : -1));
   }, { passive: true });
 
-  // ---------- Musique de fond : clips officiels de Tayc via le lecteur YouTube ----------
-  const MUSIC = [
-    ['-kG7RlDD7tg', "N'y pense plus"],
-    ['mUTsvbridvM', 'Le temps'],
-    ['NrdhxCM3aAY', 'Dodo'],
-  ];
+  // ---------- Musique : les chansons de Tayc se jouent sur le site quand on les touche ----------
+  const songs = [...document.querySelectorAll('.tracklist a')];
+  const screen = document.getElementById('screen');
   const miniVinyl = document.getElementById('mini-vinyl');
   const musicToggle = document.getElementById('music-toggle');
   const musicState = document.getElementById('music-state');
   const nowSong = document.getElementById('now-song');
-  let yt = null, ytReady = false, wantPlay = false, ytErrors = 0;
+  let yt = null, ytReady = false, currentId = null, playing = false;
 
-  function setMusicUI(playing) {
+  function setMusicUI() {
     miniVinyl.classList.toggle('paused', !playing);
     musicState.textContent = playing ? '❚❚' : '▶';
-    musicToggle.setAttribute('aria-label', playing ? 'Mettre la musique en pause' : 'Lancer la musique');
-  }
-  function songTitle() {
-    const id = yt && yt.getVideoData ? yt.getVideoData().video_id : '';
-    const song = MUSIC.find(([v]) => v === id);
-    nowSong.textContent = song ? `♪ Tayc · ${song[1]}` : '♪ Tayc';
-  }
-  function noMusic() {
-    player.classList.add('no-music');
-    musicToggle.setAttribute('aria-hidden', 'true');
-    musicToggle.tabIndex = -1;
-  }
-  window.onYouTubeIframeAPIReady = () => {
-    yt = new YT.Player('yt', {
-      width: 72, height: 40,
-      videoId: MUSIC[0][0],
-      playerVars: { playsinline: 1, controls: 0, disablekb: 1, rel: 0, loop: 1, playlist: MUSIC.map(m => m[0]).join(',') },
-      events: {
-        onReady: () => { ytReady = true; yt.setVolume(70); if (wantPlay) yt.playVideo(); },
-        onStateChange: e => {
-          setMusicUI(e.data === YT.PlayerState.PLAYING || e.data === YT.PlayerState.BUFFERING);
-          if (e.data === YT.PlayerState.PLAYING) songTitle();
-        },
-        onError: () => { if (++ytErrors < MUSIC.length) yt.nextVideo(); else noMusic(); },
-      },
+    musicToggle.setAttribute('aria-label', playing ? 'Mettre la musique en pause' : 'Reprendre la musique');
+    songs.forEach(a => {
+      const active = a.dataset.id === currentId;
+      a.classList.toggle('active', active);
+      a.querySelector('.play').textContent = active && playing ? '❚❚' : '▶';
     });
-  };
-  setMusicUI(false);
-  function startMusic() {
-    wantPlay = true;
-    if (ytReady) yt.playVideo();
   }
-  musicToggle.addEventListener('click', () => {
-    if (!ytReady) return;
-    if (yt.getPlayerState() === YT.PlayerState.PLAYING) yt.pauseVideo();
-    else yt.playVideo();
-  });
-  // Ouvrir un clip sur YouTube met la musique du site en pause
-  document.querySelectorAll('.tracklist a').forEach(a => a.addEventListener('click', () => { if (ytReady) yt.pauseVideo(); }));
+  function playSong(id) {
+    if (id === currentId && yt && ytReady) {
+      if (playing) yt.pauseVideo(); else yt.playVideo();
+      return;
+    }
+    currentId = id;
+    const a = songs.find(s => s.dataset.id === id);
+    nowSong.textContent = `♪ Tayc · ${a.querySelector('.song').textContent}`;
+    player.classList.remove('no-music');
+    screen.hidden = false;
+    if (!yt) {
+      yt = new YT.Player('yt', {
+        videoId: id,
+        playerVars: { playsinline: 1, autoplay: 1, rel: 0 },
+        events: {
+          // currentId peut avoir changé si une autre chanson a été touchée pendant le chargement
+          onReady: () => { ytReady = true; yt.setVolume(80); yt.loadVideoById(currentId); },
+          onStateChange: e => {
+            playing = e.data === YT.PlayerState.PLAYING || e.data === YT.PlayerState.BUFFERING;
+            setMusicUI();
+            // À la fin d'une chanson, on enchaîne sur la suivante
+            if (e.data === YT.PlayerState.ENDED) {
+              const k = songs.findIndex(s => s.dataset.id === currentId);
+              playSong(songs[(k + 1) % songs.length].dataset.id);
+            }
+          },
+        },
+      });
+    } else if (ytReady) {
+      yt.loadVideoById(id);
+    }
+    setMusicUI();
+    setTimeout(() => screen.scrollIntoView({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' }), 100);
+  }
+  songs.forEach(a => a.addEventListener('click', e => {
+    if (!window.YT || !YT.Player) return; // lecteur indisponible : le lien ouvre YouTube
+    e.preventDefault();
+    playSong(a.dataset.id);
+  }));
+  musicToggle.addEventListener('click', () => { if (currentId) playSong(currentId); });
+  player.classList.add('no-music');
+  setMusicUI();
 
   // ---------- Ouverture : maintenir le cœur ----------
   const hold = document.getElementById('hold');
@@ -864,7 +875,6 @@
   document.getElementById('start').addEventListener('click', e => {
     const cover = slides[COVER];
     cover.classList.add('launching');
-    startMusic();
     const r = e.currentTarget.getBoundingClientRect();
     burst(r.left + r.width / 2, r.top + r.height / 2, 18);
     setTimeout(() => { go(COVER + 1); cover.classList.remove('launching'); }, reduceMotion ? 100 : 900);
